@@ -3,7 +3,7 @@ import numpy as np
 
 
 class LaneLine(object):
-    """Single lane line"""
+    """Implementation of a Lane Line object"""
 
     def __init__(self, x, y, heigth, width):
         self.heigth = heigth

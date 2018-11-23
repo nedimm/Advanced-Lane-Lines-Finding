@@ -25,12 +25,13 @@ class LaneLineFinder(object):
         self.left_wins = []
         self.right_wins = []
         self._init_lanes(first_frame)
+        self._sliding_window_frame = None
 
     def _init_lanes(self, frame):
         thresholds_applied = self.threshold_applier.apply_combined_thresholds(frame)
         warped, unwrap_m = self.camera.perspective_transform(thresholds_applied, self.region_of_interest[0], self.region_of_interest[1])
 
-        histogram = np.sum(warped[int(self.height / 2):, :], axis=0)
+        frame_histogram = np.sum(warped[int(self.height / 2):, :], axis=0)
         nonzero = warped.nonzero()
 
         left_lane_indexes = np.empty([0], dtype=np.int)
@@ -42,8 +43,8 @@ class LaneLineFinder(object):
                 l_x_center = self.left_wins[-1].x
                 r_x_center = self.right_wins[-1].x
             else:
-                l_x_center = np.argmax(histogram[:self.width // 2])
-                r_x_center = np.argmax(histogram[self.width // 2:]) + self.width // 2
+                l_x_center = np.argmax(frame_histogram[:self.width // 2])
+                r_x_center = np.argmax(frame_histogram[self.width // 2:]) + self.width // 2
 
             left_win = SlidingWindow(y_low=self.height - i * window_height,
                                      y_high=self.height - (i + 1) * window_height,
@@ -63,7 +64,7 @@ class LaneLineFinder(object):
         self.right_lane = LaneLine(nonzero[1][right_lane_indexes], nonzero[0][right_lane_indexes],
                                    self.height, self.width)
 
-    def _find_points_in_windows(self, frame, windows):
+    def _find_lane_pixels_for_each_window(self, frame, windows):
         indices = np.empty([0], dtype=np.int)
         nonzero = frame.nonzero()
         win_x = None
@@ -117,9 +118,9 @@ class LaneLineFinder(object):
         thresholds_applied = self.threshold_applier.apply_combined_thresholds(frame)
         warped, unwrap_m = self.camera.perspective_transform(thresholds_applied, self.region_of_interest[0], self.region_of_interest[1])
 
-        (left_x, left_y) = self._find_points_in_windows(warped, self.left_wins)
+        (left_x, left_y) = self._find_lane_pixels_for_each_window(warped, self.left_wins)
         self.left_lane.fit_points(left_x, left_y)
-        (right_x, right_y) = self._find_points_in_windows(warped, self.right_wins)
+        (right_x, right_y) = self._find_lane_pixels_for_each_window(warped, self.right_wins)
         self.right_lane.fit_points(right_x, right_y)
 
         thresholds_applied = self.threshold_applier.apply_stacked_thresholds(frame)
@@ -128,7 +129,7 @@ class LaneLineFinder(object):
 
         warped, unwrap_m = self.camera.perspective_transform(frame, self.region_of_interest[0], self.region_of_interest[1])
         top_overlay = self._lane_overlay(warped)
-
+        self._sliding_window_frame = info_overlay
         info_overlay = cv2.resize(info_overlay, (0, 0), fx=0.3, fy=0.3)
         top_overlay = cv2.resize(top_overlay, (0, 0), fx=0.3, fy=0.3)
         frame[:250, :, :] = frame[:250, :, :] * 0.4
@@ -148,7 +149,7 @@ class LaneLineFinder(object):
 
 if __name__ == "__main__":
     ir = ImageReader(read_mode='RGB')
-    ip = ImagePlotter()
+    ip = ImagePlotter(images_to_show_count=10)
     cc = Camera(ir, ip)
     cc.calibrate()
     ir.regex = '../test_images/test*.jpg'
@@ -157,9 +158,10 @@ if __name__ == "__main__":
 
     for image_file in ir.images():
         image = image_file.image
+        ip.add_to_plot(image, image_file.name, 'out', False)
         undistorted = cc.undistort(image)
         llf = LaneLineFinder(ta, cc, (cc.get_region_of_interest(image)), image)
         result = llf.run(undistorted)
-        ip.add_to_plot(image, image_file.name, 'out', False)
-        ip.add_to_plot(result, image_file.name + 'result', 'out', False)
+        ip.add_to_plot(llf._sliding_window_frame, image_file.name + ' sliding windows', 'out', False)
+        #ip.add_to_plot(result, image_file.name + 'result', 'out', False)
     ip.plot('out', 2)

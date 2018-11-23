@@ -1,7 +1,7 @@
 import numpy as np
 
 class SlidingWindow(object):
-    """Represents a window where we want to find 'hot' Pixels associated with Lane Lines"""
+    """Implementation of a window where we expect to find lane line pixels."""
 
     def __init__(self, y_low, y_high, x_center, margin=100, minpix=50):
         self.x = x_center

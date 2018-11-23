@@ -160,5 +160,21 @@ def _get_gradient_direction_mask(self, image, threshold, sobel_ksize=3):
  After applying calibration, thresholding, and a perspective transform to a road image, we have a binary image where the lane lines stand out. However, we still need to decide explicitly which pixels are part of the lines and which belong to the left line and which belong to the right line.
 
 Plotting a histogram of where the binary activations occur across the image is one potential solution for this. 
-That means we can use the two highest peaks from our histogram as a starting point for determining where the lane lines are, and then use sliding windows moving upward in the image (further along the road) to determine where the lane lines go.
+```python
+frame_histogram = np.sum(warped[int(self.height / 2):, :], axis=0)
+```
+With this histogram we are adding up the pixel values along each column in the image. In our thresholded binary image, pixels are either 0 or 1, so the two most prominent peaks in this histogram will be good indicators of the x-position of the base of the lane lines. We can use that as a starting point for where to search for the lines. From that point, we can use a sliding window, placed around the line centers, to find and follow the lines up to the top of the frame.
+Now that we have found all our pixels belonging to each line through the sliding window method, we fit a polynomial to the line.
+```python
+def fit_points(self, x, y):
+    points = len(y) > 0 and (np.max(y) - np.min(y)) > self.heigth * 0.625
+    no_coef = len(self.coef) == 0
+
+    if points or no_coef:
+        self.coef.append(np.polyfit(y, x, 2))
+```
+
+![sliding windows](https://i.imgur.com/FzkNWC5.png "output_images/figure_8_sliding_windows.png")
+
+
 ![final result](https://i.imgur.com/9m7c5hd.png "output_images/Figure_8_final.png")

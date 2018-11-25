@@ -12,9 +12,10 @@ class LaneLine(object):
         self.fit_points(x, y)
         self._meter_per_x_axis = 700
         self._meter_per_y_axis = 720
-        # based on US regulations of a min of 12 feet or 3.7 meters for a lane width
-        self._land_width = 3.7  # meters
-        self._image_lane_length = 30  # Assuming the lane is 30 meters long in the image
+        # lane width assumed is 3.7 meters
+        self._land_width = 3.7
+        # assuming the lane is 30 m long
+        self._image_lane_length = 30
 
     def fit_points(self, x, y):
         points = len(y) > 0 and (np.max(y) - np.min(y)) > self.heigth * 0.625
@@ -30,17 +31,16 @@ class LaneLine(object):
         return np.stack((fit[0] * y ** 2 + fit[1] * y + fit[2], y)).astype(np.int).T
 
     def radius_of_curvature(self):
-        # Define conversions in x and y from pixels space to meters
         ym_per_pix = self._image_lane_length / self._meter_per_y_axis
         xm_per_pix = self._land_width / self._meter_per_x_axis
 
         points = self.generate_points()
         x = points[:, 0]
         y = points[:, 1]
-        fit_cr = np.polyfit(y * ym_per_pix, x * xm_per_pix, 2)
-        first_deriv = 2 * fit_cr[0] * self._meter_per_y_axis * ym_per_pix + fit_cr[1]
-        secnd_deriv = 2 * fit_cr[0]
-        radius = int(((1 + (first_deriv ** 2) ** 1.5) / np.absolute(secnd_deriv)))
+        fit = np.polyfit(y * ym_per_pix, x * xm_per_pix, 2)
+        first_derivate = 2 * fit[0] * self._meter_per_y_axis * ym_per_pix + fit[1]
+        second_derivate = 2 * fit[0]
+        radius = int(((1 + (first_derivate ** 2) ** 1.5) / np.absolute(second_derivate)))
         return radius
 
     def camera_distance(self):

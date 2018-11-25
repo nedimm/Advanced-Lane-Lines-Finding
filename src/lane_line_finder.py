@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+from moviepy.editor import VideoFileClip
 
 from src.sliding_window import SlidingWindow
 from src.lane_line import LaneLine
@@ -26,6 +27,7 @@ class LaneLineFinder(object):
         self.right_wins = []
         self._init_lanes(first_frame)
         self._sliding_window_frame = None
+        self._overlay = None
 
     def _init_lanes(self, frame):
         thresholds_applied = self.threshold_applier.apply_combined_thresholds(frame)
@@ -132,6 +134,7 @@ class LaneLineFinder(object):
         self._sliding_window_frame = info_overlay
         info_overlay = cv2.resize(info_overlay, (0, 0), fx=0.3, fy=0.3)
         top_overlay = cv2.resize(top_overlay, (0, 0), fx=0.3, fy=0.3)
+        self._overlay = top_overlay
         frame[:250, :, :] = frame[:250, :, :] * 0.4
         (height, width, _) = info_overlay.shape
         frame[25:25 + height, 25:25 + width, :] = info_overlay
@@ -145,9 +148,22 @@ class LaneLineFinder(object):
 
         return self._lane_overlay(frame, unwrap_m)
 
+def create_video():
+    ir = ImageReader(read_mode='RGB')
+    cc = Camera(ir, None)
+    cc.calibrate()
+    ta = ThresholdApplier()
 
+    output_video_name = '../output_videos/project_video_result.mp4'
+    input_video = VideoFileClip("../project_video.mp4")
 
-if __name__ == "__main__":
+    image = input_video.get_frame(0)
+    undistorted = cc.undistort(image)
+    llf = LaneLineFinder(ta, cc, (cc.get_region_of_interest(image)), undistorted)
+    output_video = input_video.fl_image(llf.run)
+    output_video.write_videofile(output_video_name, audio=False)
+
+def test_with_images():
     ir = ImageReader(read_mode='RGB')
     ip = ImagePlotter(images_to_show_count=10)
     cc = Camera(ir, ip)
@@ -162,6 +178,11 @@ if __name__ == "__main__":
         undistorted = cc.undistort(image)
         llf = LaneLineFinder(ta, cc, (cc.get_region_of_interest(image)), image)
         result = llf.run(undistorted)
-        ip.add_to_plot(llf._sliding_window_frame, image_file.name + ' sliding windows', 'out', False)
-        #ip.add_to_plot(result, image_file.name + 'result', 'out', False)
+        # ip.add_to_plot(llf._sliding_window_frame, image_file.name + ' sliding windows', 'out', False)
+        # ip.add_to_plot(result, image_file.name + 'result', 'out', False)
+        ip.add_to_plot(llf._overlay, image_file.name + ' overlay', 'out', False)
     ip.plot('out', 2)
+
+if __name__ == "__main__":
+    #test_with_images()
+    create_video()

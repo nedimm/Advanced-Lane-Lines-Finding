@@ -1,6 +1,6 @@
 ## Advanced Lane Finding
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
-
+[![Advanced Lane Finding on the Road](https://i.imgur.com/6gJ57WS.png)](https://www.youtube.com/watch?v=1BTBnllGh1o "Advanced Lane Finding")
+[More results on Youtube](https://www.youtube.com/watch?v=F7gluNuSx50&list=PL06vO3TcKwfYCAyu5FBqnhxylDzH1chP2)
 
 
 In this Advanced Lane Finding project, we will apply computer vision techniques to detected road lanes in a video from a front-facing camera on a car. The video itself was supplied by Udacity. The project is done in Python and OpenCV.
@@ -176,5 +176,47 @@ def fit_points(self, x, y):
 
 ![sliding windows](https://i.imgur.com/FzkNWC5.png "output_images/figure_8_sliding_windows.png")
 
+Determine the Curvature of the Lane 
+---
+The radius of curvature at any point `x` of the function `x=f(y)` is given as follows:
 
-![final result](https://i.imgur.com/9m7c5hd.png "output_images/Figure_8_final.png")
+![radius](https://i.imgur.com/5CRVRmw.png)
+In the case of the second order polynomial above, the first and second derivatives are:
+![derivatives](https://i.imgur.com/UWtS5WA.png)
+So, the equation for radius of curvature becomes:
+
+![radius](https://i.imgur.com/Cl62Xq3.png)
+
+In Python it was implemented as follows:
+
+```python
+def radius_of_curvature(self):
+    ym_per_pix = self._image_lane_length / self._meter_per_y_axis
+    xm_per_pix = self._land_width / self._meter_per_x_axis
+
+    points = self.generate_points()
+    x = points[:, 0]
+    y = points[:, 1]
+    fit = np.polyfit(y * ym_per_pix, x * xm_per_pix, 2)
+    first_derivate = 2 * fit[0] * self._meter_per_y_axis * ym_per_pix + fit[1]
+    second_derivate = 2 * fit[0]
+    radius = int(((1 + (first_derivate ** 2) ** 1.5) / np.absolute(second_derivate)))
+    return radius
+```
+
+Warp the Detected Lane Boundaries Back onto the Original Image
+---
+The warped image with an overlay is shown in the next figure:
+![overlay](https://i.imgur.com/R6CAO8P.png "output_images/figure_9_overlay.png")
+Next, we warp back the part of the image onto the original image.
+
+Visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position
+---
+The final result with the and overlay on the top is presented on the figure below:
+
+![final result](https://i.imgur.com/9m7c5hd.png "output_images/Figure_10_final.png")
+
+Discussion
+---
+As it can be seen from the video shown in the Jupyter notebook, with this approach we can successfully detect the lane lines on a flat road without elevation and properly marked.
+In more challenging situations with an elevation in any direction or a road not being properly marked we could expect problems. As in the previous project, we have here also thresholds that need to be estimated manually. One possible improvement would be if we could use machine learning algorithms to automatically determine the thresholds.

@@ -1,6 +1,6 @@
 ## Advanced Lane Finding
 [![Advanced Lane Finding on the Road](https://i.imgur.com/6gJ57WS.png)](https://www.youtube.com/watch?v=1BTBnllGh1o "Advanced Lane Finding")
-[More results on Youtube](https://www.youtube.com/watch?v=F7gluNuSx50&list=PL06vO3TcKwfYCAyu5FBqnhxylDzH1chP2)
+[More results on Youtube](https://www.youtube.com/watch?v=1BTBnllGh1o&list=PL06vO3TcKwfYCAyu5FBqnhxylDzH1chP2&index=4)
 
 
 In this Advanced Lane Finding project, we will apply computer vision techniques to detected road lanes in a video from a front-facing camera on a car. The video itself was supplied by Udacity. The project is done in Python and OpenCV.
